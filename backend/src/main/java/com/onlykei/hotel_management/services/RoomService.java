@@ -1,26 +1,30 @@
 package com.onlykei.hotel_management.services;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jdk.jfr.BooleanFlag;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.onlykei.hotel_management.models.RoomModel;
+import com.onlykei.hotel_management.repositories.RoomRepository;
+import org.springframework.stereotype.Service;
+import java.util.List;
 
-@Data
-@Entity
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Service
 public class RoomService {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    @BooleanFlag
-    boolean isAvailable = false;
-    private int pricePerNight;
-    private String type;
+    private final RoomRepository roomRepository;
+    public RoomService(RoomRepository roomRepository) {
+        this.roomRepository = roomRepository;
+    }
+
+    public List<RoomModel> getAllRooms() {
+        return roomRepository.findAll();
+    }
+
+    public RoomModel getRoomById(Long id) {
+        return roomRepository.findById(id).orElse(null);
+    }
+
+    public RoomModel saveRoom(RoomModel room) {
+        return roomRepository.save(room);
+    }
+
+    public void deleteRoom(Long id) {
+        roomRepository.deleteById(id);
+    }
 }
