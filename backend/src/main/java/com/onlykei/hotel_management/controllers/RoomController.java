@@ -1,26 +1,50 @@
 package com.onlykei.hotel_management.controllers;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jdk.jfr.BooleanFlag;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.onlykei.hotel_management.models.RoomModel;
+import com.onlykei.hotel_management.services.RoomService;
+import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
-@Data
-@Entity
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@RestController
+@RequestMapping("/api/rooms")
+@CrossOrigin
 public class RoomController {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    @BooleanFlag
-    boolean isAvailable = false;
-    private int pricePerNight;
-    private String type;
+
+    private final RoomService roomService;
+    public RoomController(RoomService roomService) {
+        this.roomService = roomService;
+    }
+
+    @GetMapping
+    public List<RoomModel> getAllRooms() {
+        return roomService.getAllRooms();
+    }
+
+    @GetMapping("/{id}")
+    public RoomModel getRoomById(@PathVariable Long id) {
+        return roomService.getRoomById(id);
+    }
+
+    @PostMapping
+    public RoomModel createRoom(@RequestBody RoomModel room) {
+        return roomService.saveRoom(room);
+    }
+
+    @PutMapping("/{id}")
+    public RoomModel updateRoom(@PathVariable Long id, @RequestBody RoomModel roomDetails) {
+        RoomModel room = roomService.getRoomById(id);
+        if (room != null) {
+            room.setId(roomDetails.getId());
+            room.setType(roomDetails.getType());
+            room.setPricePerNight(roomDetails.getPricePerNight());
+            room.setAvailable(roomDetails.isAvailable());
+            return roomService.saveRoom(room);
+        }
+        return null;
+    }
+
+    @DeleteMapping("/{id}")
+    public void deleteRoom(@PathVariable Long id) {
+        roomService.deleteRoom(id);
+    }
 }
