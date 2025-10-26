@@ -1,4 +1,6 @@
 package com.onlykei.hotel_management.repositories;
 
-public class BookingRepository {
-}
+import com.onlykei.hotel_management.models.BookingModel;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface BookingRepository extends JpaRepository<BookingModel, Long> {}
