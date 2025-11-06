@@ -8,6 +8,7 @@ import Guests from './pages/Guests';
 import Calendar from './pages/Calendar';
 import Inventory from './pages/Inventory';
 import Expenses from './pages/Expenses';
+import {FinanceDashboard} from "./pages/FinanceDashboard.tsx";
 export function App() {
   return <Router>
       <MainLayout>
@@ -19,6 +20,7 @@ export function App() {
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/inventory" element={<Inventory />} />
           <Route path="/expenses" element={<Expenses />} />
+          <Route path="/finances" element={<FinanceDashboard />} />
         </Routes>
       </MainLayout>
     </Router>;
