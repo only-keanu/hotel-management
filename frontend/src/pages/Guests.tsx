@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
-import { PlusIcon, SearchIcon, UserIcon, MailIcon, PhoneIcon, BookOpenIcon } from 'lucide-react';
-import GuestFormModal from '../components/guests/GuestFormModal';
+import { PlusIcon, SearchIcon, UserIcon, MailIcon, PhoneIcon, BookOpenIcon, EyeIcon, EditIcon, Trash2Icon } from 'lucide-react';
 import guestService from '../services/guestService';
-import { Guest } from '../utils/types';
+import { Guest, GuestDTO } from '../types/types';
+import GuestFormModal from "../components/guests/GuestFormModal";
+import GuestViewModal from "../components/guests/GuestViewModal";
 
 const Guests: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [isAddGuestModalOpen, setIsAddGuestModalOpen] = useState<boolean>(false);
+  const [isViewGuestModalOpen, setIsViewGuestModalOpen] = useState<boolean>(false);
   const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
+  const [viewGuest, setViewGuest] = useState<Guest | null>(null);
   const [guests, setGuests] = useState<Guest[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch guests from backend on component mount
   useEffect(() => {
     fetchGuests();
   }, []);
@@ -33,15 +35,24 @@ const Guests: React.FC = () => {
   };
 
   // Filter guests based on search term
-  const filteredGuests = guests.filter((guest: Guest) =>
-      guest.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      guest.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      guest.phone.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredGuests = guests.filter((guest: Guest) => {
+    const fullName = `${guest.firstName ?? ''} ${guest.middleName ?? ''} ${guest.lastName ?? ''}`.toLowerCase();
+    return (
+        fullName.includes(searchTerm.toLowerCase()) ||
+        (guest.emailAddress ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (guest.mobileNo ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (guest.identificationNo ?? '').toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  });
 
   const handleAddGuest = (): void => {
     setSelectedGuest(null);
     setIsAddGuestModalOpen(true);
+  };
+
+  const handleViewGuest = (guest: Guest): void => {
+    setViewGuest(guest);
+    setIsViewGuestModalOpen(true);
   };
 
   const handleEditGuest = (guest: Guest): void => {
@@ -49,31 +60,35 @@ const Guests: React.FC = () => {
     setIsAddGuestModalOpen(true);
   };
 
-  const handleSaveGuest = async (guestData: Guest): Promise<void> => {
+  const handleEditFromView = (guest: Guest): void => {
+    setSelectedGuest(guest);
+    setIsViewGuestModalOpen(false);
+    setIsAddGuestModalOpen(true);
+  };
+
+  const handleSaveGuest = async (guestData: GuestDTO, guestId?: number): Promise<void> => {
     try {
-      if (guestData.id) {
-        // Update existing guest
-        await guestService.updateGuest(guestData.id, guestData);
+      if (guestId) {
+        await guestService.updateGuest(guestId, guestData);
       } else {
-        // Add new guest
         await guestService.createGuest(guestData);
       }
-
-      // Refresh the guest list
       await fetchGuests();
       setIsAddGuestModalOpen(false);
-
+      setSelectedGuest(null);
     } catch (err: any) {
-      alert('Failed to save guest: ' + (err.response?.data?.message || err.message));
+      const errorMessage = err.response?.data?.message || err.message || 'Unknown error occurred';
+      alert('Failed to save guest: ' + errorMessage);
       console.error('Error saving guest:', err);
+      throw err;
     }
   };
 
   const handleDeleteGuest = async (id: number): Promise<void> => {
-    if (window.confirm('Are you sure you want to delete this guest?')) {
+    if (window.confirm('Are you sure you want to delete this guest? This action cannot be undone.')) {
       try {
         await guestService.deleteGuest(id);
-        await fetchGuests(); // Refresh the list
+        await fetchGuests();
       } catch (err: any) {
         alert('Failed to delete guest: ' + (err.response?.data?.message || err.message));
         console.error('Error deleting guest:', err);
@@ -81,7 +96,6 @@ const Guests: React.FC = () => {
     }
   };
 
-  // Loading state
   if (loading) {
     return (
         <div className="flex justify-center items-center h-64">
@@ -90,7 +104,6 @@ const Guests: React.FC = () => {
     );
   }
 
-  // Error state
   if (error) {
     return (
         <div className="space-y-6">
@@ -131,7 +144,7 @@ const Guests: React.FC = () => {
             </div>
             <input
                 type="text"
-                placeholder="Search guests by name, email, or phone..."
+                placeholder="Search guests by name, email, phone, or ID..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -143,40 +156,26 @@ const Guests: React.FC = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
             <tr>
-              <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Guest
               </th>
-              <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell"
-              >
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
                 Contact
               </th>
-              <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell"
-              >
-                ID
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                ID No.
               </th>
-              <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Bookings
               </th>
-              <th
-                  scope="col"
-                  className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
+              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
             {filteredGuests.map((guest: Guest) => {
+              const fullName = `${guest.firstName ?? ''} ${guest.middleName ?? ''} ${guest.lastName ?? ''}`.trim();
               const guestBookings = guest.bookings || [];
 
               return (
@@ -188,57 +187,63 @@ const Guests: React.FC = () => {
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900">
-                            {guest.fullName}
+                            {fullName || 'Unnamed Guest'}
                           </div>
                           <div className="text-sm text-gray-500 md:hidden">
-                            {guest.email}
+                            {guest.emailAddress}
                           </div>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
                       <div className="flex flex-col">
-                        <div className="flex items-center text-sm text-gray-500">
-                          <MailIcon size={14} className="mr-1 text-gray-400" />
-                          {guest.email}
-                        </div>
-                        <div className="flex items-center text-sm text-gray-500 mt-1">
-                          <PhoneIcon size={14} className="mr-1 text-gray-400" />
-                          {guest.phone}
-                        </div>
+                        {guest.emailAddress && (
+                            <div className="flex items-center text-sm text-gray-500">
+                              <MailIcon size={14} className="mr-1 text-gray-400" />
+                              {guest.emailAddress}
+                            </div>
+                        )}
+                        {(guest.mobileNo || guest.telephoneNo) && (
+                            <div className="flex items-center text-sm text-gray-500 mt-1">
+                              <PhoneIcon size={14} className="mr-1 text-gray-400" />
+                              {guest.mobileNo || guest.telephoneNo}
+                            </div>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden lg:table-cell">
-                      <span className="text-gray-600">ID: {guest.id}</span>
+                      <span className="text-gray-600">{guest.identificationNo}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <BookOpenIcon size={16} className="text-blue-600 mr-2" />
-                        <span className="text-sm text-gray-900">
-                        {guestBookings.length}
-                      </span>
-                        {guestBookings.length > 0 && (
-                            <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800">
-                          {guestBookings.some((b) => b.status === 'checked_in')
-                              ? 'Active Stay'
-                              : 'Past Stays'}
-                        </span>
-                        )}
+                        <span className="text-sm text-gray-900">{guestBookings.length}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button
-                          onClick={() => handleEditGuest(guest)}
-                          className="text-blue-600 hover:text-blue-900 mr-3"
-                      >
-                        Edit
-                      </button>
-                      <button
-                          onClick={() => guest.id && handleDeleteGuest(guest.id)}
-                          className="text-red-600 hover:text-red-900"
-                      >
-                        Delete
-                      </button>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                            onClick={() => handleViewGuest(guest)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                            title="View Guest"
+                        >
+                          <EyeIcon size={18} />
+                        </button>
+                        <button
+                            onClick={() => handleEditGuest(guest)}
+                            className="p-2 text-green-600 hover:bg-green-50 rounded-md transition-colors"
+                            title="Edit Guest"
+                        >
+                          <EditIcon size={18} />
+                        </button>
+                        <button
+                            onClick={() => guest.id && handleDeleteGuest(guest.id)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                            title="Delete Guest"
+                        >
+                          <Trash2Icon size={18} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
               );
@@ -256,12 +261,24 @@ const Guests: React.FC = () => {
           </table>
         </div>
 
-        {/* Add/Edit Guest Modal */}
         <GuestFormModal
             isOpen={isAddGuestModalOpen}
-            onClose={() => setIsAddGuestModalOpen(false)}
+            onClose={() => {
+              setIsAddGuestModalOpen(false);
+              setSelectedGuest(null);
+            }}
             guest={selectedGuest}
             onSave={handleSaveGuest}
+        />
+
+        <GuestViewModal
+            isOpen={isViewGuestModalOpen}
+            onClose={() => {
+              setIsViewGuestModalOpen(false);
+              setViewGuest(null);
+            }}
+            guest={viewGuest}
+            onEdit={handleEditFromView}
         />
       </div>
   );
