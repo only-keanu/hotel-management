@@ -13,13 +13,13 @@ public class ExpensesService {
     public ExpensesService(ExpensesRepository expensesRepository){
         this.expensesRepository = expensesRepository;
     }
-    List<ExpensesModel> getAllExpenses() {
+    public List<ExpensesModel> getAllExpenses() {
         return expensesRepository.findAll();
     }
-    Optional<ExpensesModel> getExpenseById(Long id){
-        return expensesRepository.findById(id);
+    public ExpensesModel getExpenseById(Long id){
+        return expensesRepository.findById(id).orElse(null);
     }
-    ExpensesModel saveExpense(ExpensesModel expense){
+    public ExpensesModel saveExpense(ExpensesModel expense){
         return saveExpense(expense);
     }
 

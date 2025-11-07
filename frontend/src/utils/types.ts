@@ -10,9 +10,10 @@ export interface Room {
 }
 // Guest Types
 export interface Guest {
-  id: string;
+  id: number;
   firstName: string;
   lastName: string;
+  fullName: string;
   email: string;
   phone: string;
   address?: string;

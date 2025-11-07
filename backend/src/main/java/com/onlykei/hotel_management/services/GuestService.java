@@ -12,11 +12,11 @@ public class GuestService {
     public GuestService(GuestRepository guestRepository){
         this.guestRepository = guestRepository;
     }
-    List<GuestModel> getAllGuests(){
+    public List<GuestModel> getAllGuests(){
         return guestRepository.findAll();
     }
-    Optional<GuestModel> getGuestById(Long id){
-        return guestRepository.findById(id);
+    public GuestModel getGuestById(Long id){
+        return guestRepository.findById(id).orElse(null);
     }
     public GuestModel saveGuest (GuestModel guest){
         return guestRepository.save(guest);

@@ -7,6 +7,10 @@ const Sidebar = () => {
     path: '/',
     icon: <HomeIcon size={20} />
   }, {
+    name: 'Guests',
+    path: '/guests',
+    icon: <UsersIcon size={20} />
+  }, {
     name: 'Rooms',
     path: '/rooms',
     icon: <BedDoubleIcon size={20} />
@@ -19,10 +23,6 @@ const Sidebar = () => {
     path: '/calendar',
     icon: <CalendarIcon size={20} />
   }, {
-    name: 'Guests',
-    path: '/guests',
-    icon: <UsersIcon size={20} />
-  }, {
     name: 'Inventory',
     path: '/inventory',
     icon: <PackageIcon size={20} />
@@ -30,7 +30,12 @@ const Sidebar = () => {
     name: 'Expenses',
     path: '/expenses',
     icon: <DollarSignIcon size={20} />
-  }];
+  },
+    {
+      name: 'Finances',
+      path: '/finances',
+      icon: <DollarSignIcon size={20} />
+    }];
   return <aside className="bg-blue-800 text-white w-64 flex-shrink-0 hidden md:block">
       <div className="h-full flex flex-col">
         <div className="p-4 border-b border-blue-700">

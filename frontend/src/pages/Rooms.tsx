@@ -5,11 +5,14 @@ import { mockRooms, mockGuests } from '../utils/mockData';
 import { PlusIcon, FilterIcon } from 'lucide-react';
 import RoomDetailModal from '../components/rooms/RoomDetailModal';
 import RoomBookingModal from '../components/rooms/RoomBookingModal';
+import RoomFormModal from '../components/rooms/RoomFormModal';
 const Rooms = () => {
   const [filter, setFilter] = useState('all');
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const filteredRooms = filter === 'all' ? mockRooms : mockRooms.filter(room => room.status === filter);
   const handleViewDetails = room => {
     setSelectedRoom(room);
@@ -20,11 +23,18 @@ const Rooms = () => {
     setIsBookingModalOpen(true);
   };
   const handleEditRoom = room => {
-    // In a real app, this would open an edit modal
-    console.log('Edit room:', room);
+    setSelectedRoom(room);
+    setIsDetailModalOpen(false);
+    setIsEditModalOpen(true);
+  };
+  const handleAddRoom = () => {
+    setSelectedRoom(null);
+    setIsAddModalOpen(true);
+  };
+  const handleSaveRoom = roomData => {
+    console.log('Save room:', roomData);
   };
   const handleCreateBooking = bookingData => {
-    // In a real app, this would save the booking to the database
     console.log('New booking created:', bookingData);
   };
   return <div className="space-y-6">
@@ -35,7 +45,7 @@ const Rooms = () => {
             Manage your hotel rooms and availability
           </p>
         </div>
-        <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center text-sm">
+        <button onClick={handleAddRoom} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center text-sm">
           <PlusIcon size={16} className="mr-1" />
           Add New Room
         </button>
@@ -74,6 +84,10 @@ const Rooms = () => {
       <RoomDetailModal isOpen={isDetailModalOpen} onClose={() => setIsDetailModalOpen(false)} room={selectedRoom} onEdit={handleEditRoom} onBook={handleBookRoom} />
       {/* Room Booking Modal */}
       <RoomBookingModal isOpen={isBookingModalOpen} onClose={() => setIsBookingModalOpen(false)} room={selectedRoom} guests={mockGuests} onCreateBooking={handleCreateBooking} />
+      {/* Room Edit Modal */}
+      <RoomFormModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} room={selectedRoom} onSave={handleSaveRoom} />
+      {/* Room Add Modal */}
+      <RoomFormModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onSave={handleSaveRoom} />
     </div>;
 };
 export default Rooms;

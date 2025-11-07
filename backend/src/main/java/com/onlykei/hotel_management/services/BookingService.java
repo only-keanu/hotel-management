@@ -13,16 +13,16 @@ public class BookingService {
     public BookingService (BookingRepository bookingRepository) {
         this.bookingRepository = bookingRepository;
     }
-    List<BookingModel> getAllBooks(){
+    public List<BookingModel> getAllBookings(){
         return bookingRepository.findAll();
     }
-    Optional<BookingModel> getBookById(Long id){
-        return bookingRepository.findById(id);
+    public BookingModel getBookingById(Long id){
+        return bookingRepository.findById(id).orElse(null);
     }
-    BookingModel saveModel(BookingModel bookingModel){
+    public BookingModel saveBooking(BookingModel bookingModel){
         return bookingRepository.save(bookingModel);
     }
-    public void deleteModel(Long id){
+    public void deleteBooking(Long id){
         bookingRepository.deleteById(id);
     }
 }

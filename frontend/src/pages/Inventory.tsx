@@ -2,16 +2,39 @@ import React, { useState } from 'react';
 import Card from '../components/ui/Card';
 import { mockInventoryItems } from '../utils/mockData';
 import { InventoryItem } from '../utils/types';
-import { PlusIcon, SearchIcon, PackageIcon, AlertTriangleIcon } from 'lucide-react';
+import { PlusIcon, SearchIcon, PackageIcon, AlertTriangleIcon, MinusIcon, EditIcon, RefreshCwIcon } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 const Inventory = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [showLowStock, setShowLowStock] = useState(false);
+  const [items, setItems] = useState(mockInventoryItems);
   // Get unique categories
   const categories = ['all', ...new Set(mockInventoryItems.map(item => item.category))];
   // Filter inventory items
-  const filteredItems = mockInventoryItems.filter(item => (item.name.toLowerCase().includes(searchTerm.toLowerCase()) || item.category.toLowerCase().includes(searchTerm.toLowerCase())) && (categoryFilter === 'all' || item.category === categoryFilter) && (!showLowStock || item.currentLevel <= item.minimumLevel));
+  const filteredItems = items.filter(item => (item.name.toLowerCase().includes(searchTerm.toLowerCase()) || item.category.toLowerCase().includes(searchTerm.toLowerCase())) && (categoryFilter === 'all' || item.category === categoryFilter) && (!showLowStock || item.currentLevel <= item.minimumLevel));
+  const handleIncrement = (itemId: string) => {
+    setItems(items.map(item => item.id === itemId && item.currentLevel < item.quantity ? {
+      ...item,
+      currentLevel: item.currentLevel + 1
+    } : item));
+  };
+  const handleDecrement = (itemId: string) => {
+    setItems(items.map(item => item.id === itemId && item.currentLevel > 0 ? {
+      ...item,
+      currentLevel: item.currentLevel - 1
+    } : item));
+  };
+  const handleRestock = (itemId: string) => {
+    setItems(items.map(item => item.id === itemId ? {
+      ...item,
+      currentLevel: item.quantity,
+      lastRestocked: format(new Date(), 'yyyy-MM-dd')
+    } : item));
+  };
+  const handleEdit = (itemId: string) => {
+    console.log('Edit item:', itemId);
+  };
   return <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
@@ -69,7 +92,7 @@ const Inventory = () => {
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
                 Last Restocked
               </th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -105,13 +128,21 @@ const Inventory = () => {
                     {format(parseISO(item.lastRestocked), 'MMM dd, yyyy')}
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button className="text-blue-600 hover:text-blue-900 mr-3">
-                    Restock
-                  </button>
-                  <button className="text-blue-600 hover:text-blue-900">
-                    Edit
-                  </button>
+                <td className="px-6 py-4 whitespace-nowrap text-center">
+                  <div className="flex items-center justify-center space-x-2">
+                    <button onClick={() => handleDecrement(item.id)} disabled={item.currentLevel === 0} className="p-1 text-red-600 hover:text-red-800 disabled:text-gray-300 disabled:cursor-not-allowed" title="Decrease quantity">
+                      <MinusIcon size={18} />
+                    </button>
+                    <button onClick={() => handleIncrement(item.id)} disabled={item.currentLevel >= item.quantity} className="p-1 text-green-600 hover:text-green-800 disabled:text-gray-300 disabled:cursor-not-allowed" title="Increase quantity">
+                      <PlusIcon size={18} />
+                    </button>
+                    <button onClick={() => handleRestock(item.id)} className="p-1 text-blue-600 hover:text-blue-800" title="Restock to full">
+                      <RefreshCwIcon size={18} />
+                    </button>
+                    <button onClick={() => handleEdit(item.id)} className="p-1 text-gray-600 hover:text-gray-800" title="Edit item">
+                      <EditIcon size={18} />
+                    </button>
+                  </div>
                 </td>
               </tr>)}
             {filteredItems.length === 0 && <tr>

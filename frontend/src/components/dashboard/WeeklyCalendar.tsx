@@ -8,12 +8,14 @@ interface WeeklyCalendarProps {
   bookings: Booking[];
   guests: Guest[];
   onAddBooking: (roomId: string, date: Date) => void;
+  onEditBooking?: (booking: Booking) => void;
 }
 const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
   rooms,
   bookings,
   guests,
-  onAddBooking
+  onAddBooking,
+  onEditBooking
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   // Calculate the start and end of the current week
@@ -69,6 +71,13 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
         return 'bg-gray-50 border-gray-100 text-gray-600';
     }
   };
+  const handleCellClick = (booking: Booking | null, room: any, day: Date) => {
+    if (booking && onEditBooking) {
+      onEditBooking(booking);
+    } else if (!booking) {
+      onAddBooking(room.id, day);
+    }
+  };
   if (roomsWithBookings.length === 0) {
     return <Card className="p-6 text-center">
         <p className="text-gray-500">No bookings found for this week</p>
@@ -119,10 +128,10 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
                 {daysInWeek.map((day, i) => {
               const bookingsForDay = findBookingsForRoomAndDay(room.id, day);
               const isToday = isSameDay(day, new Date());
-              return <div key={i} className={`bg-white border-b border-gray-200 p-1 min-h-[60px] ${isToday ? 'bg-blue-50' : ''}`} onClick={() => bookingsForDay.length === 0 && onAddBooking(room.id, day)}>
+              return <div key={i} className={`bg-white border-b border-gray-200 p-1 min-h-[60px] ${isToday ? 'bg-blue-50' : ''}`}>
                       {bookingsForDay.length > 0 ? bookingsForDay.map(booking => {
                   const guest = guests.find(g => g.id === booking.guestId);
-                  return <div key={booking.id} className={`p-1 text-xs rounded border ${getBookingCellStyle(booking.status)} mb-1 cursor-pointer`}>
+                  return <div key={booking.id} className={`p-1 text-xs rounded border ${getBookingCellStyle(booking.status)} mb-1 cursor-pointer hover:opacity-80`} onClick={() => handleCellClick(booking, room, day)}>
                               <div className="font-medium truncate">
                                 {guest?.lastName}
                               </div>
@@ -133,7 +142,7 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
                               </div>
                             </div>;
                 }) : <div className="h-full w-full flex items-center justify-center">
-                          <button className="text-xs text-gray-400 hover:text-blue-600 flex items-center">
+                          <button className="text-xs text-gray-400 hover:text-blue-600 flex items-center" onClick={() => handleCellClick(null, room, day)}>
                             <PlusIcon size={12} className="mr-1" /> Add
                           </button>
                         </div>}

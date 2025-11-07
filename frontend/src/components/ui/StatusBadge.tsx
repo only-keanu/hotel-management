@@ -1,14 +1,13 @@
 import React from 'react';
-type StatusType = 'available' | 'occupied' | 'maintenance' | 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled' | 'pending' | 'partial' | 'paid';
 interface StatusBadgeProps {
-  status: StatusType;
+  status: string;
   className?: string;
 }
 const StatusBadge: React.FC<StatusBadgeProps> = ({
   status,
   className = ''
 }) => {
-  const getStatusStyles = () => {
+  const getStatusColor = () => {
     switch (status) {
       case 'available':
         return 'bg-green-100 text-green-800';
@@ -34,11 +33,8 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({
         return 'bg-gray-100 text-gray-800';
     }
   };
-  const getStatusLabel = () => {
-    return status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ');
-  };
-  return <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusStyles()} ${className}`}>
-      {getStatusLabel()}
+  return <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor()} ${className}`}>
+      {status.replace('_', ' ')}
     </span>;
 };
 export default StatusBadge;
