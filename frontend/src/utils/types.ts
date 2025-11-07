@@ -9,18 +9,35 @@ export interface Room {
   amenities: string[];
 }
 // Guest Types
-export interface Guest {
-  id: number;
-  firstName: string;
-  lastName: string;
-  fullName: string;
-  email: string;
-  phone: string;
-  address?: string;
-  idNumber?: string;
-  idType?: 'passport' | 'driver_license' | 'national_id';
-  notes?: string;
-  bookingHistory: string[]; // Array of booking IDs
+export interface GuestFormData {
+  // Basic Guest Information
+  id?: number
+  lastName: string
+  firstName: string
+  middleName?: string
+  homeAddress?: string
+  gender?: string
+  civilStatus?: string
+  birthDate?: string
+  placeOfBirth?: string
+  identificationNo: string
+  country?: string
+  citizenship?: string
+  // Contact Information
+  mobileNo?: string
+  telephoneNo?: string
+  emailAddress?: string
+  // Company Information
+  companyName?: string
+  companyAddress?: string
+  companyTelephoneNo?: string
+  companyZipCode?: string
+  companyEmailAddress?: string
+  // Emergency Contact
+  emergencyContactFirstName?: string
+  emergencyContactLastName?: string
+  emergencyContactNumber?: string
+  emergencyContactAddress?: string
 }
 // Booking Types
 export interface Booking {
