@@ -70,15 +70,21 @@ export interface Booking {
     guest?: Guest;
 }
 
-// Room Type
+// Room Type - Updated to match backend RoomModel
 export interface Room {
-    id?: number;
-    roomNumber: string;
-    roomType: string;
-    price: number;
+    id: number;
+    number: string;              // ← not roomNumber
+    type: string;
+    pricePerNight: number;       // ← not price
+    amenities: string[];         // ← add this
     status: 'available' | 'occupied' | 'maintenance';
     description?: string;
+    capacity?: number;
 }
+
+
+// Room DTO for creating/updating rooms
+export type RoomDTO = Omit<Room, 'id'>;
 
 // API Response Types
 export interface ApiResponse<T> {

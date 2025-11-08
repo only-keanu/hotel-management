@@ -1,157 +1,388 @@
-import React, { useState, Children } from 'react';
-import Modal from '../ui/Modal';
-import { Room, Guest } from '../../utils/types';
-import { format, addDays, differenceInDays } from 'date-fns';
+import React, { useState, useEffect } from 'react';
+import { Room } from '../../types/types';
+import { X, Calendar, User, CreditCard } from 'lucide-react';
+
+interface Guest {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phoneNumber?: string;
+}
+
 interface RoomBookingModalProps {
   isOpen: boolean;
   onClose: () => void;
   room: Room | null;
   guests: Guest[];
-  onCreateBooking: (bookingData: {
-    roomId: string;
-    guestId: string;
-    checkInDate: string;
-    checkOutDate: string;
-    adults: number;
-    children: number;
-    notes?: string;
-  }) => void;
+  onCreateBooking: (bookingData: any) => void;
 }
+
 const RoomBookingModal: React.FC<RoomBookingModalProps> = ({
-  isOpen,
-  onClose,
-  room,
-  guests,
-  onCreateBooking
-}) => {
-  const today = new Date();
-  const tomorrow = addDays(today, 1);
-  const [guestId, setGuestId] = useState('');
-  const [checkInDate, setCheckInDate] = useState(format(today, 'yyyy-MM-dd'));
-  const [checkOutDate, setCheckOutDate] = useState(format(tomorrow, 'yyyy-MM-dd'));
-  const [adults, setAdults] = useState(1);
-  const [children, setChildren] = useState(0);
-  const [notes, setNotes] = useState('');
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  if (!room) return null;
-  const calculateTotal = () => {
-    const nights = differenceInDays(new Date(checkOutDate), new Date(checkInDate));
-    return nights * room.pricePerNight;
+                                                             isOpen,
+                                                             onClose,
+                                                             room,
+                                                             guests,
+                                                             onCreateBooking,
+                                                           }) => {
+  // ALL HOOKS MUST BE AT THE TOP - BEFORE ANY CONDITIONAL RETURNS
+  const [selectedGuest, setSelectedGuest] = useState<string>('');
+  const [checkInDate, setCheckInDate] = useState('');
+  const [checkOutDate, setCheckOutDate] = useState('');
+  const [numberOfGuests, setNumberOfGuests] = useState(1);
+  const [specialRequests, setSpecialRequests] = useState('');
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  // Reset form when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedGuest('');
+      setCheckInDate('');
+      setCheckOutDate('');
+      setNumberOfGuests(1);
+      setSpecialRequests('');
+      setErrors({});
+    }
+  }, [isOpen]);
+
+  // NOW we can do conditional returns AFTER all hooks
+  if (!isOpen || !room) {
+    return null;
+  }
+
+  // Calculate number of nights and total price
+  const calculateNights = () => {
+    if (!checkInDate || !checkOutDate) return 0;
+    const checkIn = new Date(checkInDate);
+    const checkOut = new Date(checkOutDate);
+    const diffTime = checkOut.getTime() - checkIn.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 0 ? diffDays : 0;
   };
+
+  const nights = calculateNights();
+  const totalPrice = nights * room.pricePerNight;
+
+  // Get today's date for min date validation
+  const today = new Date().toISOString().split('T')[0];
+
   const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-    if (!guestId) newErrors.guestId = 'Please select a guest';
-    if (!checkInDate) newErrors.checkInDate = 'Please select a check-in date';
-    if (!checkOutDate) newErrors.checkOutDate = 'Please select a check-out date';
-    if (new Date(checkOutDate) <= new Date(checkInDate)) {
-      newErrors.checkOutDate = 'Check-out date must be after check-in date';
+    const newErrors: { [key: string]: string } = {};
+
+    if (!selectedGuest || selectedGuest === '') {
+      newErrors.guest = 'Please select a guest';
     }
-    if (adults < 1) newErrors.adults = 'At least one adult is required';
-    if (adults + children > room.capacity) {
-      newErrors.capacity = `This room can only accommodate ${room.capacity} people`;
+    if (!checkInDate) {
+      newErrors.checkIn = 'Please select check-in date';
     }
+    if (!checkOutDate) {
+      newErrors.checkOut = 'Please select check-out date';
+    }
+    if (checkInDate && checkOutDate && new Date(checkOutDate) <= new Date(checkInDate)) {
+      newErrors.checkOut = 'Check-out date must be after check-in date';
+    }
+    if (numberOfGuests < 1) {
+      newErrors.numberOfGuests = 'Number of guests must be at least 1';
+    }
+    if (room.capacity && numberOfGuests > room.capacity) {
+      newErrors.numberOfGuests = `Maximum capacity is ${room.capacity} guests`;
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
-    onCreateBooking({
-      roomId: room.id,
-      guestId,
+
+    console.log('Form submitted with:', {
+      selectedGuest,
       checkInDate,
       checkOutDate,
-      adults,
-      children,
-      notes: notes.trim() || undefined
+      numberOfGuests,
     });
+
+    if (!validateForm()) {
+      console.log('Validation failed:', errors);
+      return;
+    }
+
+    const bookingData = {
+      roomId: room.id,
+      guestId: Number(selectedGuest),
+      checkInDate,
+      checkOutDate,
+      numberOfGuests,
+      specialRequests,
+      totalPrice,
+      nights,
+    };
+
+    console.log('Creating booking:', bookingData);
+    onCreateBooking(bookingData);
+    handleClose();
+  };
+
+  const handleClose = () => {
+    setSelectedGuest('');
+    setCheckInDate('');
+    setCheckOutDate('');
+    setNumberOfGuests(1);
+    setSpecialRequests('');
+    setErrors({});
     onClose();
   };
-  return <Modal isOpen={isOpen} onClose={onClose} title={`Book Room ${room.number}`} size="lg">
-      <form onSubmit={handleSubmit}>
-        <div className="space-y-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Guest
-              </label>
-              <select value={guestId} onChange={e => setGuestId(e.target.value)} className={`w-full p-2 border rounded-md ${errors.guestId ? 'border-red-500' : 'border-gray-300'}`}>
-                <option value="">Select a guest</option>
-                {guests.map(guest => <option key={guest.id} value={guest.id}>
-                    {guest.firstName} {guest.lastName}
-                  </option>)}
-              </select>
-              {errors.guestId && <p className="text-red-500 text-xs mt-1">{errors.guestId}</p>}
+
+  const handleGuestChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    console.log('Guest selected:', value);
+    setSelectedGuest(value);
+    if (value) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.guest;
+        return newErrors;
+      });
+    }
+  };
+
+  return (
+      <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              handleClose();
+            }
+          }}
+      >
+        <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          {/* Header */}
+          <div className="flex justify-between items-center p-6 border-b">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800">Book Room</h2>
+              <p className="text-sm text-gray-600 mt-1">
+                Room {room.number} - {room.type}
+              </p>
             </div>
-          </div>
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Check-in Date
-              </label>
-              <input type="date" value={checkInDate} min={format(today, 'yyyy-MM-dd')} onChange={e => setCheckInDate(e.target.value)} className={`w-full p-2 border rounded-md ${errors.checkInDate ? 'border-red-500' : 'border-gray-300'}`} />
-              {errors.checkInDate && <p className="text-red-500 text-xs mt-1">
-                  {errors.checkInDate}
-                </p>}
-            </div>
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Check-out Date
-              </label>
-              <input type="date" value={checkOutDate} min={checkInDate} onChange={e => setCheckOutDate(e.target.value)} className={`w-full p-2 border rounded-md ${errors.checkOutDate ? 'border-red-500' : 'border-gray-300'}`} />
-              {errors.checkOutDate && <p className="text-red-500 text-xs mt-1">
-                  {errors.checkOutDate}
-                </p>}
-            </div>
-          </div>
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Adults
-              </label>
-              <input type="number" value={adults} min={1} max={room.capacity} onChange={e => setAdults(parseInt(e.target.value))} className={`w-full p-2 border rounded-md ${errors.adults || errors.capacity ? 'border-red-500' : 'border-gray-300'}`} />
-              {errors.adults && <p className="text-red-500 text-xs mt-1">{errors.adults}</p>}
-            </div>
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Children
-              </label>
-              <input type="number" value={children} min={0} max={room.capacity > 1 ? room.capacity - 1 : 0} onChange={e => setChildren(parseInt(e.target.value))} className={`w-full p-2 border rounded-md ${errors.capacity ? 'border-red-500' : 'border-gray-300'}`} />
-            </div>
-          </div>
-          {errors.capacity && <p className="text-red-500 text-xs">{errors.capacity}</p>}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Notes
-            </label>
-            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} className="w-full p-2 border border-gray-300 rounded-md" placeholder="Special requests or additional information" />
-          </div>
-          <div className="bg-gray-50 p-4 rounded-md">
-            <div className="flex justify-between font-medium">
-              <span>Room Rate:</span>
-              <span>${room.pricePerNight} per night</span>
-            </div>
-            <div className="flex justify-between mt-2 text-sm text-gray-600">
-              <span>Nights:</span>
-              <span>
-                {differenceInDays(new Date(checkOutDate), new Date(checkInDate))}
-              </span>
-            </div>
-            <div className="flex justify-between mt-4 text-lg font-bold text-blue-600">
-              <span>Total:</span>
-              <span>${calculateTotal()}</span>
-            </div>
-          </div>
-          <div className="flex justify-end space-x-2 pt-4">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
-              Cancel
-            </button>
-            <button type="submit" className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700">
-              Confirm Booking
+            <button
+                onClick={handleClose}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+                type="button"
+            >
+              <X size={24} />
             </button>
           </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="p-6">
+            <div className="space-y-5">
+              {/* Guest Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <User size={16} className="inline mr-1" />
+                  Select Guest *
+                </label>
+                <select
+                    value={selectedGuest}
+                    onChange={handleGuestChange}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        errors.guest ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                >
+                  <option value="">-- Choose a guest --</option>
+                  {guests && guests.length > 0 ? (
+                      guests.map((guest) => (
+                          <option key={guest.id} value={guest.id}>
+                            {guest.firstName} {guest.lastName}
+                            {guest.email && ` (${guest.email})`}
+                          </option>
+                      ))
+                  ) : (
+                      <option value="" disabled>No guests available</option>
+                  )}
+                </select>
+                {errors.guest && (
+                    <p className="text-red-500 text-sm mt-1">{errors.guest}</p>
+                )}
+                {(!guests || guests.length === 0) && (
+                    <p className="text-amber-600 text-sm mt-1">
+                      No guests found. Please add guests first.
+                    </p>
+                )}
+              </div>
+
+              {/* Check-in Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Calendar size={16} className="inline mr-1" />
+                  Check-in Date *
+                </label>
+                <input
+                    type="date"
+                    value={checkInDate}
+                    onChange={(e) => {
+                      setCheckInDate(e.target.value);
+                      if (e.target.value) {
+                        setErrors(prev => {
+                          const newErrors = { ...prev };
+                          delete newErrors.checkIn;
+                          return newErrors;
+                        });
+                      }
+                    }}
+                    min={today}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        errors.checkIn ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                />
+                {errors.checkIn && (
+                    <p className="text-red-500 text-sm mt-1">{errors.checkIn}</p>
+                )}
+              </div>
+
+              {/* Check-out Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Calendar size={16} className="inline mr-1" />
+                  Check-out Date *
+                </label>
+                <input
+                    type="date"
+                    value={checkOutDate}
+                    onChange={(e) => {
+                      setCheckOutDate(e.target.value);
+                      if (e.target.value) {
+                        setErrors(prev => {
+                          const newErrors = { ...prev };
+                          delete newErrors.checkOut;
+                          return newErrors;
+                        });
+                      }
+                    }}
+                    min={checkInDate || today}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        errors.checkOut ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                />
+                {errors.checkOut && (
+                    <p className="text-red-500 text-sm mt-1">{errors.checkOut}</p>
+                )}
+              </div>
+
+              {/* Number of Guests */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Number of Guests *
+                </label>
+                <input
+                    type="number"
+                    value={numberOfGuests}
+                    onChange={(e) => {
+                      setNumberOfGuests(Number(e.target.value));
+                      setErrors(prev => {
+                        const newErrors = { ...prev };
+                        delete newErrors.numberOfGuests;
+                        return newErrors;
+                      });
+                    }}
+                    min="1"
+                    max={room.capacity || 10}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        errors.numberOfGuests ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                />
+                {room.capacity && (
+                    <p className="text-sm text-gray-500 mt-1">
+                      Maximum capacity: {room.capacity} guests
+                    </p>
+                )}
+                {errors.numberOfGuests && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.numberOfGuests}
+                    </p>
+                )}
+              </div>
+
+              {/* Special Requests */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Special Requests (Optional)
+                </label>
+                <textarea
+                    value={specialRequests}
+                    onChange={(e) => setSpecialRequests(e.target.value)}
+                    rows={3}
+                    placeholder="Any special requests or requirements..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* Booking Summary */}
+              {nights > 0 && (
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <div className="flex items-start gap-2 mb-3">
+                      <CreditCard className="text-blue-600 mt-1" size={20} />
+                      <h3 className="text-lg font-semibold text-blue-900">
+                        Booking Summary
+                      </h3>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-700">Price per night:</span>
+                        <span className="font-medium text-gray-900">
+                      ₱{room.pricePerNight.toLocaleString()}
+                    </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-700">Number of nights:</span>
+                        <span className="font-medium text-gray-900">{nights}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-700">Number of guests:</span>
+                        <span className="font-medium text-gray-900">
+                      {numberOfGuests}
+                    </span>
+                      </div>
+                      <div className="border-t border-blue-300 pt-2 mt-2">
+                        <div className="flex justify-between">
+                      <span className="text-lg font-bold text-blue-900">
+                        Total Price:
+                      </span>
+                          <span className="text-lg font-bold text-blue-900">
+                        ₱{totalPrice.toLocaleString()}
+                      </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+              )}
+            </div>
+
+            {/* Footer Actions */}
+            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+              <button
+                  type="button"
+                  onClick={handleClose}
+                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                  type="submit"
+                  disabled={!guests || guests.length === 0}
+                  className={`px-4 py-2 rounded-md transition-colors ${
+                      !guests || guests.length === 0
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+              >
+                Confirm Booking
+              </button>
+            </div>
+          </form>
         </div>
-      </form>
-    </Modal>;
+      </div>
+  );
 };
+
 export default RoomBookingModal;

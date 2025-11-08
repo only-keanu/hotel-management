@@ -1,5 +1,5 @@
 import React from 'react';
-import { Room } from '../../utils/types';
+import { Room } from '../../types/types';
 import StatusBadge from '../ui/StatusBadge';
 import Card from '../ui/Card';
 import { BedDoubleIcon, WifiIcon, TvIcon, DollarSignIcon } from 'lucide-react';
