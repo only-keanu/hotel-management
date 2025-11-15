@@ -1,6 +1,6 @@
 import React, { useEffect, useState, Children } from 'react';
 import Modal from '../ui/Modal';
-import { Room, Guest } from '../../utils/types';
+import { Room, Guest } from '../../types/types';
 import { format, differenceInDays } from 'date-fns';
 interface BookingModalProps {
   isOpen: boolean;

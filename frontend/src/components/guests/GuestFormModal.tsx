@@ -1,164 +1,418 @@
-import React, { useEffect, useState } from 'react';
-import Modal from '../ui/Modal';
-import { Guest } from '../../utils/types';
+import React, { useState, useEffect } from 'react';
+import { XIcon } from 'lucide-react';
+import { Guest, GuestDTO } from "../../types/types";
+
 interface GuestFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  guest?: Guest;
-  onSave: (guestData: {
-    id?: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone: string;
-    address?: string;
-    idNumber?: string;
-    idType?: 'passport' | 'driver_license' | 'national_id';
-    notes?: string;
-  }) => void;
+  guest: Guest | null;
+  onSave: (guest: GuestDTO, guestId?: number) => Promise<void>;
 }
+
 const GuestFormModal: React.FC<GuestFormModalProps> = ({
-  isOpen,
-  onClose,
-  guest,
-  onSave
-}) => {
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
-  const [idNumber, setIdNumber] = useState('');
-  const [idType, setIdType] = useState<'passport' | 'driver_license' | 'national_id' | ''>('');
-  const [notes, setNotes] = useState('');
+                                                         isOpen,
+                                                         onClose,
+                                                         guest,
+                                                         onSave,
+                                                       }) => {
+  const [formData, setFormData] = useState<GuestDTO>({
+    identificationNo: '',
+    firstName: '',
+    middleName: '',
+    lastName: '',
+    gender: '',
+    civilStatus: '',
+    birthDate: '',
+    placeOfBirth: '',
+    homeAddress: '',
+    country: '',
+    citizenship: '',
+    mobileNo: '',
+    telephoneNo: '',
+    emailAddress: '',
+    companyName: '',
+    companyAddress: '',
+    companyTelephoneNo: '',
+    companyZipCode: '',
+    companyEmailAddress: '',
+    emergencyContactFirstName: '',
+    emergencyContactLastName: '',
+    emergencyContactNumber: '',
+    emergencyContactAddress: '',
+  });
+
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Update form when editing an existing guest
   useEffect(() => {
     if (guest) {
-      setFirstName(guest.firstName);
-      setLastName(guest.lastName);
-      setEmail(guest.email);
-      setPhone(guest.phone);
-      setAddress(guest.address || '');
-      setIdNumber(guest.idNumber || '');
-      setIdType(guest.idType || '');
-      setNotes(guest.notes || '');
+      setFormData({
+        identificationNo: guest.identificationNo || '',
+        firstName: guest.firstName || '',
+        middleName: guest.middleName || '',
+        lastName: guest.lastName || '',
+        gender: guest.gender || '',
+        civilStatus: guest.civilStatus || '',
+        birthDate: guest.birthDate || '',
+        placeOfBirth: guest.placeOfBirth || '',
+        homeAddress: guest.homeAddress || '',
+        country: guest.country || '',
+        citizenship: guest.citizenship || '',
+        mobileNo: guest.mobileNo || '',
+        telephoneNo: guest.telephoneNo || '',
+        emailAddress: guest.emailAddress || '',
+        companyName: guest.companyName || '',
+        companyAddress: guest.companyAddress || '',
+        companyTelephoneNo: guest.companyTelephoneNo || '',
+        companyZipCode: guest.companyZipCode || '',
+        companyEmailAddress: guest.companyEmailAddress || '',
+        emergencyContactFirstName: guest.emergencyContactFirstName || '',
+        emergencyContactLastName: guest.emergencyContactLastName || '',
+        emergencyContactNumber: guest.emergencyContactNumber || '',
+        emergencyContactAddress: guest.emergencyContactAddress || '',
+      });
     } else {
-      setFirstName('');
-      setLastName('');
-      setEmail('');
-      setPhone('');
-      setAddress('');
-      setIdNumber('');
-      setIdType('');
-      setNotes('');
+      setFormData({
+        identificationNo: '',
+        firstName: '',
+        middleName: '',
+        lastName: '',
+        gender: '',
+        civilStatus: '',
+        birthDate: '',
+        placeOfBirth: '',
+        homeAddress: '',
+        country: '',
+        citizenship: '',
+        mobileNo: '',
+        telephoneNo: '',
+        emailAddress: '',
+        companyName: '',
+        companyAddress: '',
+        companyTelephoneNo: '',
+        companyZipCode: '',
+        companyEmailAddress: '',
+        emergencyContactFirstName: '',
+        emergencyContactLastName: '',
+        emergencyContactNumber: '',
+        emergencyContactAddress: '',
+      });
     }
     setErrors({});
   }, [guest, isOpen]);
-  const validateForm = () => {
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }));
+  };
+
+  const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
-    if (!firstName.trim()) newErrors.firstName = 'First name is required';
-    if (!lastName.trim()) newErrors.lastName = 'Last name is required';
-    if (!email.trim()) newErrors.email = 'Email is required';else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = 'Email is invalid';
-    if (!phone.trim()) newErrors.phone = 'Phone number is required';
-    if (idType && !idNumber) newErrors.idNumber = 'ID number is required when ID type is selected';
-    if (idNumber && !idType) newErrors.idType = 'ID type is required when ID number is provided';
+
+    if (!formData.identificationNo.trim())
+      newErrors.identificationNo = 'Identification No. is required';
+    if (!formData.firstName.trim())
+      newErrors.firstName = 'First name is required';
+    if (!formData.lastName.trim())
+      newErrors.lastName = 'Last name is required';
+
+    // Optional: Email validation
+    if (formData.emailAddress && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.emailAddress)) {
+      newErrors.emailAddress = 'Invalid email format';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-  const handleSubmit = (e: React.FormEvent) => {
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
-    onSave({
-      id: guest?.id,
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      email: email.trim(),
-      phone: phone.trim(),
-      address: address.trim() || undefined,
-      idNumber: idNumber.trim() || undefined,
-      idType: idType || undefined,
-      notes: notes.trim() || undefined
-    });
-    onClose();
+
+    setIsSubmitting(true);
+    try {
+      await onSave(formData, guest?.id);
+      onClose();
+    } catch (error) {
+      console.error('Error saving guest:', error);
+      alert('Failed to save guest. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
-  return <Modal isOpen={isOpen} onClose={onClose} title={guest ? 'Edit Guest' : 'Add New Guest'} size="lg">
-      <form onSubmit={handleSubmit}>
-        <div className="space-y-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                First Name*
-              </label>
-              <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} className={`w-full p-2 border rounded-md ${errors.firstName ? 'border-red-500' : 'border-gray-300'}`} />
-              {errors.firstName && <p className="text-red-500 text-xs mt-1">{errors.firstName}</p>}
+
+  if (!isOpen) return null;
+
+  return (
+      <div className="fixed inset-0 z-50 overflow-y-auto">
+        <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+          <div
+              className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+              onClick={onClose}
+          ></div>
+
+          <div className="inline-block bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:max-w-2xl w-full my-8">
+            <div className="bg-white px-6 py-5">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  {guest ? 'Edit Guest' : 'Add New Guest'}
+                </h3>
+                <button
+                    onClick={onClose}
+                    className="text-gray-400 hover:text-gray-500"
+                    type="button"
+                >
+                  <XIcon size={24} />
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Identification No. */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Identification No. *
+                  </label>
+                  <input
+                      type="text"
+                      name="identificationNo"
+                      value={formData.identificationNo}
+                      onChange={handleChange}
+                      className={`mt-1 block w-full border ${
+                          errors.identificationNo ? 'border-red-500' : 'border-gray-300'
+                      } rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  {errors.identificationNo && (
+                      <p className="text-sm text-red-600 mt-1">{errors.identificationNo}</p>
+                  )}
+                </div>
+
+                {/* Personal Info */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      First Name *
+                    </label>
+                    <input
+                        type="text"
+                        name="firstName"
+                        value={formData.firstName}
+                        onChange={handleChange}
+                        className={`mt-1 block w-full border ${
+                            errors.firstName ? 'border-red-500' : 'border-gray-300'
+                        } rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    />
+                    {errors.firstName && (
+                        <p className="text-sm text-red-600 mt-1">{errors.firstName}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Middle Name
+                    </label>
+                    <input
+                        type="text"
+                        name="middleName"
+                        value={formData.middleName}
+                        onChange={handleChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Last Name *
+                    </label>
+                    <input
+                        type="text"
+                        name="lastName"
+                        value={formData.lastName}
+                        onChange={handleChange}
+                        className={`mt-1 block w-full border ${
+                            errors.lastName ? 'border-red-500' : 'border-gray-300'
+                        } rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    />
+                    {errors.lastName && (
+                        <p className="text-sm text-red-600 mt-1">{errors.lastName}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Contact & Address */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Mobile No.
+                    </label>
+                    <input
+                        type="text"
+                        name="mobileNo"
+                        value={formData.mobileNo}
+                        onChange={handleChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Telephone No.
+                    </label>
+                    <input
+                        type="text"
+                        name="telephoneNo"
+                        value={formData.telephoneNo}
+                        onChange={handleChange}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Email Address
+                  </label>
+                  <input
+                      type="email"
+                      name="emailAddress"
+                      value={formData.emailAddress}
+                      onChange={handleChange}
+                      className={`mt-1 block w-full border ${
+                          errors.emailAddress ? 'border-red-500' : 'border-gray-300'
+                      } rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  />
+                  {errors.emailAddress && (
+                      <p className="text-sm text-red-600 mt-1">{errors.emailAddress}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Home Address
+                  </label>
+                  <input
+                      type="text"
+                      name="homeAddress"
+                      value={formData.homeAddress}
+                      onChange={handleChange}
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* Company Info */}
+                <div className="border-t pt-3">
+                  <h4 className="text-md font-medium text-gray-700 mb-2">Company Info</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <input
+                        type="text"
+                        name="companyName"
+                        value={formData.companyName}
+                        onChange={handleChange}
+                        placeholder="Company Name"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <input
+                        type="text"
+                        name="companyAddress"
+                        value={formData.companyAddress}
+                        onChange={handleChange}
+                        placeholder="Company Address"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <input
+                        type="text"
+                        name="companyTelephoneNo"
+                        value={formData.companyTelephoneNo}
+                        onChange={handleChange}
+                        placeholder="Company Telephone No."
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <input
+                        type="text"
+                        name="companyZipCode"
+                        value={formData.companyZipCode}
+                        onChange={handleChange}
+                        placeholder="Zip Code"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <input
+                        type="email"
+                        name="companyEmailAddress"
+                        value={formData.companyEmailAddress}
+                        onChange={handleChange}
+                        placeholder="Company Email Address"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Emergency Contact */}
+                <div className="border-t pt-3">
+                  <h4 className="text-md font-medium text-gray-700 mb-2">Emergency Contact</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <input
+                        type="text"
+                        name="emergencyContactFirstName"
+                        value={formData.emergencyContactFirstName}
+                        onChange={handleChange}
+                        placeholder="First Name"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <input
+                        type="text"
+                        name="emergencyContactLastName"
+                        value={formData.emergencyContactLastName}
+                        onChange={handleChange}
+                        placeholder="Last Name"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <input
+                      type="text"
+                      name="emergencyContactNumber"
+                      value={formData.emergencyContactNumber}
+                      onChange={handleChange}
+                      placeholder="Contact Number"
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <input
+                      type="text"
+                      name="emergencyContactAddress"
+                      value={formData.emergencyContactAddress}
+                      onChange={handleChange}
+                      placeholder="Address"
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* Buttons */}
+                <div className="mt-5 flex justify-end gap-3">
+                  <button
+                      type="button"
+                      onClick={onClose}
+                      disabled={isSubmitting}
+                      className="px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className={`px-4 py-2 rounded-md text-white ${
+                          isSubmitting
+                              ? 'bg-blue-400 cursor-not-allowed'
+                              : 'bg-blue-600 hover:bg-blue-700'
+                      }`}
+                  >
+                    {isSubmitting ? 'Saving...' : guest ? 'Update Guest' : 'Add Guest'}
+                  </button>
+                </div>
+              </form>
             </div>
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Last Name*
-              </label>
-              <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} className={`w-full p-2 border rounded-md ${errors.lastName ? 'border-red-500' : 'border-gray-300'}`} />
-              {errors.lastName && <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>}
-            </div>
-          </div>
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email*
-              </label>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} className={`w-full p-2 border rounded-md ${errors.email ? 'border-red-500' : 'border-gray-300'}`} />
-              {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
-            </div>
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Phone*
-              </label>
-              <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} className={`w-full p-2 border rounded-md ${errors.phone ? 'border-red-500' : 'border-gray-300'}`} />
-              {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Address
-            </label>
-            <input type="text" value={address} onChange={e => setAddress(e.target.value)} className="w-full p-2 border border-gray-300 rounded-md" placeholder="Street, City, State, Zip" />
-          </div>
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                ID Type
-              </label>
-              <select value={idType} onChange={e => setIdType(e.target.value as any)} className={`w-full p-2 border rounded-md ${errors.idType ? 'border-red-500' : 'border-gray-300'}`}>
-                <option value="">Select ID Type</option>
-                <option value="passport">Passport</option>
-                <option value="driver_license">Driver's License</option>
-                <option value="national_id">National ID</option>
-              </select>
-              {errors.idType && <p className="text-red-500 text-xs mt-1">{errors.idType}</p>}
-            </div>
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                ID Number
-              </label>
-              <input type="text" value={idNumber} onChange={e => setIdNumber(e.target.value)} className={`w-full p-2 border rounded-md ${errors.idNumber ? 'border-red-500' : 'border-gray-300'}`} />
-              {errors.idNumber && <p className="text-red-500 text-xs mt-1">{errors.idNumber}</p>}
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Notes
-            </label>
-            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} className="w-full p-2 border border-gray-300 rounded-md" placeholder="Additional information, preferences, etc." />
-          </div>
-          <div className="flex justify-end space-x-2 pt-4">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
-              Cancel
-            </button>
-            <button type="submit" className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700">
-              {guest ? 'Update Guest' : 'Add Guest'}
-            </button>
           </div>
         </div>
-      </form>
-    </Modal>;
+      </div>
+  );
 };
+
 export default GuestFormModal;
