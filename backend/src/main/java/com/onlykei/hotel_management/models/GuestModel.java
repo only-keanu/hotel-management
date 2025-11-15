@@ -1,5 +1,6 @@
 package com.onlykei.hotel_management.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
@@ -63,5 +64,6 @@ public class GuestModel {
     private String emergencyContactAddress;
 
     @OneToMany(mappedBy = "guest", cascade = CascadeType.ALL)
+    @JsonIgnoreProperties({"room", "guest"})
     private List<BookingModel> bookings;
 }

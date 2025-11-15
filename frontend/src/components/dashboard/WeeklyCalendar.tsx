@@ -1,7 +1,7 @@
 import React, { useState, Fragment } from 'react';
 import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
 import { ChevronLeftIcon, ChevronRightIcon, PlusIcon } from 'lucide-react';
-import { Room, Booking, Guest } from '../../utils/types';
+import { Room, Booking, Guest } from '../../types/types';
 import Card from '../ui/Card';
 interface WeeklyCalendarProps {
   rooms: Room[];

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Card from '../components/ui/Card';
 import BookingCard from '../components/bookings/BookingCard';
 import WeeklyCalendar from '../components/dashboard/WeeklyCalendar';
@@ -7,8 +7,8 @@ import { BedDoubleIcon, UsersIcon, CalendarIcon, DollarSignIcon, TrendingUpIcon 
 import BookingFormModal from '../components/bookings/BookingFormModal';
 import BookingDetailModal from '../components/bookings/BookingDetailModal';
 import ChecklistModal from '../components/bookings/ChecklistModal';
-import { Booking } from '../utils/types';
-import { format, parseISO } from 'date-fns';
+import { Booking } from '../types/types';
+
 const Dashboard = () => {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [isEditBookingModalOpen, setIsEditBookingModalOpen] = useState(false);

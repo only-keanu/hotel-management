@@ -1,10 +1,13 @@
 package com.onlykei.hotel_management.controllers;
 
+import com.onlykei.hotel_management.dtos.GuestDTO;
 import com.onlykei.hotel_management.models.GuestModel;
 import com.onlykei.hotel_management.services.GuestService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @CrossOrigin(origins = "http://localhost:5173")
@@ -19,9 +22,14 @@ public class GuestController {
 
     // GET all guests
     @GetMapping
-    public List<GuestModel> getAllGuests() {
-        return guestService.getAllGuests();
+    public ResponseEntity<List<GuestDTO>> getAllGuests() {
+        List<GuestDTO> guests = guestService.getAllGuests()
+                .stream()
+                .map(guestService::mapToDTO)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(guests);
     }
+
 
     // GET guest by ID
     @GetMapping("/{id}")

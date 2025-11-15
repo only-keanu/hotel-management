@@ -1,18 +1,18 @@
-import React, {useEffect, useState} from 'react';
+import { useEffect, useState } from 'react';
 import RoomCard from '../components/rooms/RoomCard';
 import Card from '../components/ui/Card';
-import { mockRooms, mockGuests } from '../utils/mockData';
+import { mockGuests } from '../utils/mockData';
 import roomService from '../services/roomService';
-import bookingService from '../services/bookingService';
 import { PlusIcon, FilterIcon } from 'lucide-react';
 import RoomDetailModal from '../components/rooms/RoomDetailModal';
 import RoomBookingModal from '../components/rooms/RoomBookingModal';
 import RoomFormModal from '../components/rooms/RoomFormModal';
-import {Room,RoomDTO} from "../types/types.ts";
+import { Room, RoomDTO, RoomStatus } from "../types/types";
+import bookingApi from "../services/bookingApi.tsx";
 
 const Rooms = () => {
-  const [filter, setFilter] = useState('all');
-  const [selectedRoom, setSelectedRoom] = useState(null);
+  const [filter, setFilter] = useState<'all' | RoomStatus>('all');
+  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -21,9 +21,7 @@ const Rooms = () => {
   const [error, setError] = useState<string | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
 
-  // filteredRooms now declared AFTER rooms
-  const filteredRooms = filter === 'all' ? rooms : rooms.filter(room => room.status === filter);
-
+  // Fetch rooms from API
   useEffect(() => {
     fetchRooms();
   }, []);
@@ -33,28 +31,31 @@ const Rooms = () => {
       setLoading(true);
       setError(null);
       const data = await roomService.getAllRooms();
+      console.log("Fetched rooms:", data);
       setRooms(data);
-    }
-    catch (err: any) {
+    } catch (err: any) {
       setError(err.message || 'Failed to fetch rooms');
       console.error('Error fetching rooms:', err);
-    }
-    finally {
+    } finally {
       setLoading(false);
     }
-  }
+  };
 
-  const handleViewDetails = room => {
+  // Filter rooms by status
+  const filteredRooms = rooms.filter(room => filter === 'all' ? true : room.status === filter);
+
+  // Handlers
+  const handleViewDetails = (room: Room) => {
     setSelectedRoom(room);
     setIsDetailModalOpen(true);
   };
 
-  const handleBookRoom = room => {
+  const handleBookRoom = (room: Room) => {
     setSelectedRoom(room);
     setIsBookingModalOpen(true);
   };
 
-  const handleEditRoom = room => {
+  const handleEditRoom = (room: Room) => {
     setSelectedRoom(room);
     setIsDetailModalOpen(false);
     setIsEditModalOpen(true);
@@ -65,33 +66,28 @@ const Rooms = () => {
     setIsAddModalOpen(true);
   };
 
-  const handleSaveRoom = async (roomData: RoomDTO, roomId?: number): Promise<void> => {
+  const handleSaveRoom = async (roomData: RoomDTO, roomId?: number) => {
     try {
-      if(roomId){
+      if (roomId) {
         await roomService.updateRoom(roomId, roomData);
-      }
-      else{
+      } else {
         await roomService.createRoom(roomData);
       }
       await fetchRooms();
       setIsAddModalOpen(false);
       setIsEditModalOpen(false);
       setSelectedRoom(null);
-    }
-    catch(err: any){
+    } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Unknown error occurred';
       alert('Failed to save Room: ' + errorMessage);
       console.error('Error saving room:', err);
-      throw err;
     }
   };
 
   const handleCreateBooking = async (bookingData: any) => {
     try {
       console.log('Creating booking with data:', bookingData);
-
-      // Create booking in backend
-      const newBooking = await bookingService.createBooking({
+      const newBooking = await bookingApi.createBooking({
         roomId: bookingData.roomId,
         guestId: bookingData.guestId,
         checkInDate: bookingData.checkInDate,
@@ -101,15 +97,8 @@ const Rooms = () => {
         totalPrice: bookingData.totalPrice,
       });
 
-      console.log('Booking created successfully:', newBooking);
-
-      // Show success message
       alert(`Booking created successfully! Booking ID: ${newBooking.id}`);
-
-      // Refresh rooms to update availability
       await fetchRooms();
-
-      // Close the booking modal
       setIsBookingModalOpen(false);
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Unknown error occurred';
@@ -118,7 +107,7 @@ const Rooms = () => {
     }
   };
 
-  // Show loading state
+  // Loading state
   if (loading) {
     return (
         <div className="flex justify-center items-center h-64">
@@ -127,7 +116,7 @@ const Rooms = () => {
     );
   }
 
-  // Show error state
+  // Error state
   if (error) {
     return (
         <div className="flex justify-center items-center h-64">
@@ -146,12 +135,11 @@ const Rooms = () => {
 
   return (
       <div className="space-y-6">
+        {/* Header */}
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Rooms</h1>
-            <p className="text-gray-600">
-              Manage your hotel rooms and availability
-            </p>
+            <p className="text-gray-600">Manage your hotel rooms and availability</p>
           </div>
           <button
               onClick={handleAddRoom}
@@ -162,76 +150,50 @@ const Rooms = () => {
           </button>
         </div>
 
+        {/* Filter */}
         <Card className="p-4">
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center mr-4">
               <FilterIcon size={16} className="text-gray-500 mr-1" />
               <span className="text-sm text-gray-600">Filter by:</span>
             </div>
-            <button
-                onClick={() => setFilter('all')}
-                className={`px-3 py-1 rounded-md text-sm ${
-                    filter === 'all'
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-            >
-              All Rooms
-            </button>
-            <button
-                onClick={() => setFilter('available')}
-                className={`px-3 py-1 rounded-md text-sm ${
-                    filter === 'available'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-            >
-              Available
-            </button>
-            <button
-                onClick={() => setFilter('occupied')}
-                className={`px-3 py-1 rounded-md text-sm ${
-                    filter === 'occupied'
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-            >
-              Occupied
-            </button>
-            <button
-                onClick={() => setFilter('maintenance')}
-                className={`px-3 py-1 rounded-md text-sm ${
-                    filter === 'maintenance'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-            >
-              Maintenance
-            </button>
+            {['all', 'available', 'occupied', 'maintenance'].map((f) => (
+                <button
+                    key={f}
+                    onClick={() => setFilter(f as 'all' | RoomStatus)}
+                    className={`px-3 py-1 rounded-md text-sm ${
+                        filter === f
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                >
+                  {f.charAt(0).toUpperCase() + f.slice(1)}
+                </button>
+            ))}
           </div>
         </Card>
 
+        {/* Room grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredRooms.map(room => (
-              <RoomCard
-                  key={room.id}
-                  room={room}
-                  onViewDetails={() => handleViewDetails(room)}
-                  onBookNow={() => handleBookRoom(room)}
-              />
-          ))}
-          {filteredRooms.length === 0 && (
+          {filteredRooms.length > 0 ? (
+              filteredRooms.map(room => (
+                  <RoomCard
+                      key={room.id}
+                      room={room}
+                      onViewDetails={() => handleViewDetails(room)}
+                      onBookNow={() => handleBookRoom(room)}
+                  />
+              ))
+          ) : (
               <div className="col-span-full">
                 <Card className="p-8 text-center">
-                  <p className="text-gray-500">
-                    No rooms match the selected filter
-                  </p>
+                  <p className="text-gray-500">No rooms match the selected filter</p>
                 </Card>
               </div>
           )}
         </div>
 
-        {/* Room Detail Modal */}
+        {/* Modals */}
         <RoomDetailModal
             isOpen={isDetailModalOpen}
             onClose={() => setIsDetailModalOpen(false)}
@@ -239,8 +201,6 @@ const Rooms = () => {
             onEdit={handleEditRoom}
             onBook={handleBookRoom}
         />
-
-        {/* Room Booking Modal */}
         <RoomBookingModal
             isOpen={isBookingModalOpen}
             onClose={() => setIsBookingModalOpen(false)}
@@ -248,16 +208,12 @@ const Rooms = () => {
             guests={mockGuests}
             onCreateBooking={handleCreateBooking}
         />
-
-        {/* Room Edit Modal */}
         <RoomFormModal
             isOpen={isEditModalOpen}
             onClose={() => setIsEditModalOpen(false)}
             room={selectedRoom}
             onSave={handleSaveRoom}
         />
-
-        {/* Room Add Modal */}
         <RoomFormModal
             isOpen={isAddModalOpen}
             onClose={() => setIsAddModalOpen(false)}

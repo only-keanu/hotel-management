@@ -50,14 +50,22 @@ const RoomCard: React.FC<RoomCardProps> = ({
         <div className="border-t border-gray-100 pt-3">
           <p className="text-xs text-gray-500 mb-2">Amenities</p>
           <div className="flex flex-wrap gap-1">
-            {room.amenities.slice(0, 3).map((amenity, index) => <span key={index} className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-gray-100 text-gray-700">
-                {amenity === 'Wi-Fi' && <WifiIcon size={12} className="mr-1" />}
-                {amenity === 'TV' && <TvIcon size={12} className="mr-1" />}
-                {amenity}
-              </span>)}
-            {room.amenities.length > 3 && <span className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-gray-100 text-gray-700">
-                +{room.amenities.length - 3} more
-              </span>}
+            {(room.amenities || []).slice(0, 3).map((amenity, index) => (
+                <span
+                    key={index}
+                    className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-gray-100 text-gray-700"
+                >
+    {amenity === 'Wi-Fi' && <WifiIcon size={12} className="mr-1" />}
+                  {amenity === 'TV' && <TvIcon size={12} className="mr-1" />}
+                  {amenity}
+  </span>
+            ))}
+            {(room.amenities?.length ?? 0) > 3 && (
+                <span className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-gray-100 text-gray-700">
+    +{(room.amenities?.length ?? 0) - 3} more
+  </span>
+            )}
+
           </div>
         </div>
       </div>

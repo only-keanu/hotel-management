@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Card from '../components/ui/Card';
 import { mockInventoryItems } from '../utils/mockData';
-import { InventoryItem } from '../utils/types';
 import { PlusIcon, SearchIcon, PackageIcon, AlertTriangleIcon, MinusIcon, EditIcon, RefreshCwIcon } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 const Inventory = () => {

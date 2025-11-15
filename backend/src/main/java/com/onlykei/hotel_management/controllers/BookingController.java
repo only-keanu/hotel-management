@@ -1,82 +1,112 @@
 package com.onlykei.hotel_management.controllers;
 
-import com.onlykei.hotel_management.models.BookingModel;
-import com.onlykei.hotel_management.models.GuestModel;
-import com.onlykei.hotel_management.models.RoomModel;
+import com.onlykei.hotel_management.dtos.BookingDTO;
+import com.onlykei.hotel_management.dtos.CreateBookingRequest;
+import com.onlykei.hotel_management.dtos.ExtendBookingRequest;
 import com.onlykei.hotel_management.services.BookingService;
-import com.onlykei.hotel_management.services.GuestService;
-import com.onlykei.hotel_management.services.RoomService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Booking Controller - REST API for bookings
+ * Base URL: http://localhost:8080/api/v1/bookings
+ */
 @RestController
 @RequestMapping("/api/v1/bookings")
-@CrossOrigin
+@RequiredArgsConstructor
+@CrossOrigin(origins = "*")  // Allow requests from React app
 public class BookingController {
 
     private final BookingService bookingService;
-    private final GuestService guestService;
-    private final RoomService roomService;
 
-    public BookingController(BookingService bookingService, GuestService guestService, RoomService roomService) {
-        this.bookingService = bookingService;
-        this.guestService = guestService;
-        this.roomService = roomService;
-    }
-
-    // GET all bookings
+    /**
+     * GET /api/v1/bookings
+     * GET /api/v1/bookings?status=confirmed
+     */
     @GetMapping
-    public List<BookingModel> getAllBookings() {
-        return bookingService.getAllBookings();
+    public ResponseEntity<List<BookingDTO>> getAllBookings(
+            @RequestParam(required = false) String status
+    ) {
+        if (status != null && !status.isEmpty()) {
+            return ResponseEntity.ok(bookingService.getBookingsByStatus(status));
+        }
+        return ResponseEntity.ok(bookingService.getAllBookings());
     }
 
-    // GET one booking by ID
+    /**
+     * GET /api/v1/bookings/1
+     */
     @GetMapping("/{id}")
-    public BookingModel getBookingById(@PathVariable Long id) {
-        return bookingService.getBookingById(id);
+    public ResponseEntity<BookingDTO> getBookingById(@PathVariable Long id) {
+        return ResponseEntity.ok(bookingService.getBookingById(id));
     }
 
-    // CREATE new booking
+    /**
+     * POST /api/v1/bookings
+     * Body: CreateBookingRequest JSON
+     */
     @PostMapping
-    public BookingModel createBooking(@RequestBody BookingModel booking) {
-        // Optional: verify that Guest and Room exist
-        GuestModel guest = guestService.getGuestById(booking.getGuest().getId());
-        RoomModel room = roomService.getRoomById(booking.getRoom().getId());
-
-        if (guest == null || room == null) {
-            throw new IllegalArgumentException("Guest or Room not found.");
-        }
-
-        booking.setGuest(guest);
-        booking.setRoom(room);
-
-        return bookingService.saveBooking(booking);
+    public ResponseEntity<BookingDTO> createBooking(
+            @RequestBody CreateBookingRequest request
+    ) {
+        BookingDTO booking = bookingService.createBooking(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(booking);
     }
 
-    // UPDATE existing booking
-    @PutMapping("/{id}")
-    public BookingModel updateBooking(@PathVariable Long id, @RequestBody BookingModel bookingDetails) {
-        BookingModel existingBooking = bookingService.getBookingById(id);
-        if (existingBooking != null) {
-            existingBooking.setCheckInDate(bookingDetails.getCheckInDate());
-            existingBooking.setCheckOutDate(bookingDetails.getCheckOutDate());
-            existingBooking.setTotalAmount(bookingDetails.getTotalAmount());
-
-            // Optionally update room/guest if changed
-            if (bookingDetails.getGuest() != null)
-                existingBooking.setGuest(bookingDetails.getGuest());
-            if (bookingDetails.getRoom() != null)
-                existingBooking.setRoom(bookingDetails.getRoom());
-
-            return bookingService.saveBooking(existingBooking);
-        }
-        return null;
+    /**
+     * PUT /api/v1/bookings/1/check-in
+     */
+    @PutMapping("/{id}/check-in")
+    public ResponseEntity<BookingDTO> checkIn(@PathVariable Long id) {
+        return ResponseEntity.ok(bookingService.checkIn(id));
     }
 
-    // DELETE booking
+    /**
+     * PUT /api/v1/bookings/1/check-out
+     */
+    @PutMapping("/{id}/check-out")
+    public ResponseEntity<BookingDTO> checkOut(@PathVariable Long id) {
+        return ResponseEntity.ok(bookingService.checkOut(id));
+    }
+
+    /**
+     * PUT /api/v1/bookings/1/extend
+     * Body: ExtendBookingRequest JSON
+     */
+    @PutMapping("/{id}/extend")
+    public ResponseEntity<BookingDTO> extendBooking(
+            @PathVariable Long id,
+            @RequestBody ExtendBookingRequest request
+    ) {
+        return ResponseEntity.ok(bookingService.extendBooking(id, request));
+    }
+
+    /**
+     * DELETE /api/v1/bookings/1
+     */
     @DeleteMapping("/{id}")
-    public void deleteBooking(@PathVariable Long id) {
-        bookingService.deleteBooking(id);
+    public ResponseEntity<Void> cancelBooking(@PathVariable Long id) {
+        bookingService.cancelBooking(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * GET /api/v1/bookings/checking-in-today
+     */
+    @GetMapping("/checking-in-today")
+    public ResponseEntity<List<BookingDTO>> getCheckingInToday() {
+        return ResponseEntity.ok(bookingService.getCheckingInToday());
+    }
+
+    /**
+     * GET /api/v1/bookings/checking-out-today
+     */
+    @GetMapping("/checking-out-today")
+    public ResponseEntity<List<BookingDTO>> getCheckingOutToday() {
+        return ResponseEntity.ok(bookingService.getCheckingOutToday());
     }
 }
