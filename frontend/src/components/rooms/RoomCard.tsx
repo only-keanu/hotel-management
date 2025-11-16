@@ -2,7 +2,7 @@ import React from 'react';
 import { Room } from '../../types/types';
 import StatusBadge from '../ui/StatusBadge';
 import Card from '../ui/Card';
-import { BedDoubleIcon, WifiIcon, TvIcon, DollarSignIcon } from 'lucide-react';
+import {BedDoubleIcon, WifiIcon, TvIcon, PhilippinePeso} from 'lucide-react';
 interface RoomCardProps {
   room: Room;
   onViewDetails: () => void;
@@ -42,7 +42,7 @@ const RoomCard: React.FC<RoomCardProps> = ({
           </span>
         </div>
         <div className="flex items-center text-blue-600 font-semibold mb-3">
-          <DollarSignIcon size={16} className="mr-1" />${room.pricePerNight}{' '}
+          <PhilippinePeso size={16} className="mr-1" />{room.pricePerNight}{' '}
           <span className="text-gray-500 font-normal text-xs ml-1">
             per night
           </span>
