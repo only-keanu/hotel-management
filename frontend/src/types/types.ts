@@ -225,3 +225,26 @@ export class GuestDTO {
         Object.assign(this, data);
     }
 }
+
+export interface InventoryItem {
+    id: string;
+    name: string;
+    category: string;
+    quantity: number;          // Maximum/total capacity
+    currentLevel: number;      // Current stock level
+    minimumLevel: number;      // Threshold for low stock alerts
+    unit: string;              // e.g., "piece", "box", "bottle"
+    notes?: string | undefined;
+    lastRestocked: string;     // ISO date string
+}
+
+// For creating new items (without id and lastRestocked)
+export interface CreateInventoryItemDto {
+    name: string;
+    category: string;
+    quantity: number;
+    currentLevel: number;
+    minimumLevel: number;
+    unit: string;
+    notes?: string | null;
+}
