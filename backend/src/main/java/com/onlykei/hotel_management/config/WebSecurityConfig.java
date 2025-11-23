@@ -17,7 +17,7 @@ import org.springframework.web.cors.CorsConfiguration;
 @EnableMethodSecurity(prePostEnabled = true)
 public class WebSecurityConfig {
 //test commit
-    //test commit 2
+    //test commit 3
     @Bean
     PasswordEncoder passwordEncoder() {
         return PasswordEncoderFactories.createDelegatingPasswordEncoder();
