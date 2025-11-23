@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from 'axios';
-import { Booking, Room, Guest, ChecklistItem } from '../types/types';
+import { Booking, Room, Guest, ChecklistItem, InventoryItem } from '../types/types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
@@ -43,15 +43,15 @@ export const bookingApi = {
         return response.data;
     },
 
-        checkIn: async (id: number | string): Promise<Booking> => {
-            const response = await axios.put(`${API_BASE_URL}/bookings/${id}/check-in`);
-            return response.data;
-        },
+    checkIn: async (id: number | string): Promise<Booking> => {
+        const response = await axios.put(`${API_BASE_URL}/bookings/${id}/check-in`);
+        return response.data;
+    },
 
-        checkOut: async (id: number | string): Promise<Booking> => {
-            const response = await axios.put(`${API_BASE_URL}/bookings/${id}/check-out`);
-            return response.data;
-        },
+    checkOut: async (id: number | string): Promise<Booking> => {
+        const response = await axios.put(`${API_BASE_URL}/bookings/${id}/check-out`);
+        return response.data;
+    },
 
     extendBooking: async (id: number | string, data: { newCheckOutDate: string }): Promise<Booking> => {
         const response: AxiosResponse<Booking> = await axios.post(`${API_BASE_URL}/bookings/${id}/extend`, data);
@@ -150,6 +150,61 @@ export const checklistApi = {
             checklist
         );
         return response.data;
+    },
+};
+
+// Inventory API
+export const inventoryApi = {
+    getAllItems: async (): Promise<InventoryItem[]> => {
+        const response: AxiosResponse<InventoryItem[]> = await axios.get(`${API_BASE_URL}/inventory`);
+        return response.data;
+    },
+
+    getItemById: async (id: string | number): Promise<InventoryItem> => {
+        const response: AxiosResponse<InventoryItem> = await axios.get(`${API_BASE_URL}/inventory/${id}`);
+        return response.data;
+    },
+
+    getItemsByCategory: async (category: string): Promise<InventoryItem[]> => {
+        const response: AxiosResponse<InventoryItem[]> = await axios.get(
+            `${API_BASE_URL}/inventory/category/${category}`
+        );
+        return response.data;
+    },
+
+    getLowStockItems: async (): Promise<InventoryItem[]> => {
+        const response: AxiosResponse<InventoryItem[]> = await axios.get(`${API_BASE_URL}/inventory/low-stock`);
+        return response.data;
+    },
+
+    createItem: async (itemData: any): Promise<InventoryItem> => {
+        const response: AxiosResponse<InventoryItem> = await axios.post(`${API_BASE_URL}/inventory`, itemData);
+        return response.data;
+    },
+
+    updateItem: async (id: string | number, itemData: any): Promise<InventoryItem> => {
+        const response: AxiosResponse<InventoryItem> = await axios.put(
+            `${API_BASE_URL}/inventory/${id}`,
+            itemData
+        );
+        return response.data;
+    },
+
+    updateQuantity: async (id: string | number, quantity: number): Promise<InventoryItem> => {
+        const response: AxiosResponse<InventoryItem> = await axios.patch(
+            `${API_BASE_URL}/inventory/${id}/quantity`,
+            { quantity }
+        );
+        return response.data;
+    },
+
+    restockItem: async (id: string | number): Promise<InventoryItem> => {
+        const response: AxiosResponse<InventoryItem> = await axios.post(`${API_BASE_URL}/inventory/${id}/restock`);
+        return response.data;
+    },
+
+    deleteItem: async (id: string | number): Promise<void> => {
+        await axios.delete(`${API_BASE_URL}/inventory/${id}`);
     },
 };
 

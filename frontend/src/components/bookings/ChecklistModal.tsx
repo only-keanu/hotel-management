@@ -9,7 +9,7 @@ interface ChecklistModalProps {
   booking: Booking | null;
   room: Room | null;
   checklistItems: ChecklistItem[];
-  onSaveChecklist: (bookingId: number | string, items: ChecklistItem[]) => void;
+  onSaveChecklist: (bookingId: string | number, items: ChecklistItem[]) => void;
 }
 
 const ChecklistModal: React.FC<ChecklistModalProps> = ({
