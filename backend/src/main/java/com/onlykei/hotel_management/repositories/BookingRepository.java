@@ -40,7 +40,7 @@ public interface BookingRepository extends JpaRepository<BookingModel, Long> {
             @Param("checkInDate") LocalDate checkInDate,
             @Param("checkOutDate") LocalDate checkOutDate
     );
-
+    //Test commit
     // Find bookings with guest and room details
     @Query("SELECT b FROM BookingModel b " +
             "LEFT JOIN FETCH b.guest " +
